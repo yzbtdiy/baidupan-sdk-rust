@@ -54,9 +54,9 @@ pub struct FileListResponse {
     #[serde(default)]
     pub cursor: Option<String>,
 
-    /// 是否有更多数据
+    /// 是否有更多数据 (0=否, 1=是)
     #[serde(default)]
-    pub has_more: Option<bool>,
+    pub has_more: Option<i32>,
 }
 
 /// 文件预创建响应
@@ -132,4 +132,67 @@ pub struct FileOperationInfo {
     /// 文件 ID
     #[serde(default)]
     pub fs_id: Option<i64>,
+}
+
+/// 多媒体文件元数据信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileMetaInfo {
+    /// 文件 ID
+    #[serde(default)]
+    pub fs_id: Option<i64>,
+
+    /// 文件路径
+    #[serde(default)]
+    pub path: Option<String>,
+
+    /// 服务器文件名
+    #[serde(default)]
+    pub server_filename: Option<String>,
+
+    /// 文件大小(字节)
+    #[serde(default)]
+    pub size: Option<i64>,
+
+    /// 是否为目录(0: 否, 1: 是)
+    #[serde(default)]
+    pub isdir: Option<i32>,
+
+    /// 文件分类
+    #[serde(default)]
+    pub category: Option<i32>,
+
+    /// 创建时间
+    #[serde(default)]
+    pub ctime: Option<i64>,
+
+    /// 修改时间
+    #[serde(default)]
+    pub mtime: Option<i64>,
+
+    /// MD5 值
+    #[serde(default)]
+    pub md5: Option<String>,
+
+    /// 下载链接
+    #[serde(default)]
+    pub dlink: Option<String>,
+
+    /// 缩略图地址
+    #[serde(default)]
+    pub thumbs: Option<serde_json::Value>,
+
+    /// 额外信息(包含多媒体信息)
+    #[serde(default)]
+    pub extra: Option<serde_json::Value>,
+
+    /// 文件来源类型
+    #[serde(default)]
+    pub from_type: Option<i32>,
+}
+
+/// 多媒体文件元数据响应
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileMetasResponse {
+    /// 文件元数据列表
+    pub list: Vec<FileMetaInfo>,
 }

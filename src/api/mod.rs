@@ -10,5 +10,8 @@ pub mod filemanager;
 /// 文件上传 API
 pub mod fileupload;
 
+/// 多媒体文件 API
+pub mod multimedia;
+
 /// 用户信息 API
 pub mod userinfo;

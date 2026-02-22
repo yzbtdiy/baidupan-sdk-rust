@@ -11,6 +11,24 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs", "io-util
 thiserror = "1.0"
 url = "2.5"
 md5 = "0.8"
+urlencoding = "2.1"
 
 [dev-dependencies]
 tokio-test = "0.4"
+
+# 示例程序配置
+[[example]]
+name = "complete_demo"
+path = "examples/complete_demo.rs"
+
+[[example]]
+name = "simple_upload"
+path = "examples/simple_upload.rs"
+
+[[example]]
+name = "refresh_token"
+path = "examples/refresh_token.rs"
+
+[[example]]
+name = "multimedia_demo"
+path = "examples/multimedia_demo.rs"

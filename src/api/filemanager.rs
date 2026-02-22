@@ -16,13 +16,12 @@ impl BaiduPanClient {
         params.insert("method".to_string(), "create".to_string());
         params.insert("openapi".to_string(), "xpansdk".to_string());
 
-        let body = json!({
-            "path": path,
-            "isdir": 1,
-            "rtype": 0
-        });
+        let mut form_data = HashMap::new();
+        form_data.insert("path".to_string(), path.to_string());
+        form_data.insert("isdir".to_string(), "1".to_string());
+        form_data.insert("rtype".to_string(), "0".to_string());
 
-        let response = self.post(&url, params, Some(body)).await?;
+        let response = self.post_form(&url, params, form_data).await?;
         BaiduPanClient::parse_response(response).await
     }
 
@@ -41,11 +40,11 @@ impl BaiduPanClient {
 
         let file_list: Vec<_> = paths.iter().map(|p| json!({"path": p})).collect();
 
-        let body = json!({
-            "filelist": serde_json::to_string(&file_list)?
-        });
+        let mut form_data = HashMap::new();
+        form_data.insert("async".to_string(), "0".to_string());
+        form_data.insert("filelist".to_string(), serde_json::to_string(&file_list)?);
 
-        let response = self.post(&url, params, Some(body)).await?;
+        let response = self.post_form(&url, params, form_data).await?;
         BaiduPanClient::parse_response(response).await
     }
 
@@ -79,11 +78,11 @@ impl BaiduPanClient {
             .map(|(from, to)| json!({"path": from, "dest": to, "newname": to}))
             .collect();
 
-        let body = json!({
-            "filelist": serde_json::to_string(&file_list)?
-        });
+        let mut form_data = HashMap::new();
+        form_data.insert("async".to_string(), "0".to_string());
+        form_data.insert("filelist".to_string(), serde_json::to_string(&file_list)?);
 
-        let response = self.post(&url, params, Some(body)).await?;
+        let response = self.post_form(&url, params, form_data).await?;
         BaiduPanClient::parse_response(response).await
     }
 
@@ -117,11 +116,11 @@ impl BaiduPanClient {
             .map(|(from, to)| json!({"path": from, "dest": to, "newname": to}))
             .collect();
 
-        let body = json!({
-            "filelist": serde_json::to_string(&file_list)?
-        });
+        let mut form_data = HashMap::new();
+        form_data.insert("async".to_string(), "0".to_string());
+        form_data.insert("filelist".to_string(), serde_json::to_string(&file_list)?);
 
-        let response = self.post(&url, params, Some(body)).await?;
+        let response = self.post_form(&url, params, form_data).await?;
         BaiduPanClient::parse_response(response).await
     }
 
@@ -141,11 +140,11 @@ impl BaiduPanClient {
 
         let file_list = vec![json!({"path": path, "newname": new_name})];
 
-        let body = json!({
-            "filelist": serde_json::to_string(&file_list)?
-        });
+        let mut form_data = HashMap::new();
+        form_data.insert("async".to_string(), "0".to_string());
+        form_data.insert("filelist".to_string(), serde_json::to_string(&file_list)?);
 
-        let response = self.post(&url, params, Some(body)).await?;
+        let response = self.post_form(&url, params, form_data).await?;
         BaiduPanClient::parse_response(response).await
     }
 }

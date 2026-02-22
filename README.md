@@ -2,6 +2,10 @@
 
 这是百度网盘开放平台的 Rust SDK,参考官方 Go SDK 进行重构,提供了完整的 API 封装。
 
+[![Crates.io](https://img.shields.io/crates/v/baidupan-sdk-rust.svg)](https://crates.io/crates/baidupan-sdk-rust)
+[![Documentation](https://docs.rs/baidupan-sdk-rust/badge.svg)](https://docs.rs/baidupan-sdk-rust)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
+
 ## 功能特性
 
 - ✅ OAuth 认证(授权码模式、设备码模式、刷新令牌)
@@ -9,46 +13,91 @@
 - ✅ 文件列表查询与搜索
 - ✅ 文件管理(创建文件夹、删除、移动、复制、重命名)
 - ✅ 文件上传(支持分片上传和秒传)
+- ✅ 多媒体文件 API(递归列表、文件元数据、下载链接)
 - ✅ 完整的类型安全和错误处理
 - ✅ 异步 API(基于 Tokio)
+- ✅ 完整的示例代码
 
 ## 快速开始
 
-### 添加依赖
+### 1. 添加依赖
 
 在 `Cargo.toml` 中添加:
 
 ```toml
 [dependencies]
-bd-sdk-rust = "0.1"
-tokio = { version = "1", features = ["full"] }
+baidupan-sdk-rust = "0.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-### 基本使用
+### 2. 获取 AppKey 和 SecretKey
+
+访问 [百度开放平台](https://pan.baidu.com/union/console/applist) 创建应用:
+
+1. 登录百度账号
+2. 创建新应用
+3. 获取 **AppKey** (client_id) 和 **SecretKey** (client_secret)
+
+### 3. 运行示例程序
+
+本项目提供了 3 个完整的示例程序:
+
+#### 📱 完整功能演示
+
+```bash
+# 编辑 examples/complete_demo.rs 配置你的 AppKey 和 SecretKey
+cargo run --example complete_demo
+```
+
+包含:
+- OAuth 设备码授权流程
+- 获取用户信息和配额
+- 文件列表、搜索
+- 创建/重命名/删除文件夹
+
+#### 📤 文件上传示例
+
+```bash
+cargo run --example simple_upload
+```
+
+#### 🔄 刷新 Token 示例
+
+```bash
+cargo run --example refresh_token
+```
+
+更多示例详见 [examples/README.md](examples/README.md)
+
+## 基本使用
 
 ```rust
-use bd_sdk_rust::{BaiduPanClient, Config};
+use baidupan_sdk_rust::{BaiduPanClient, Config};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 配置你的凭证
+    let app_key = "your_app_key";
+    let secret_key = "your_secret_key";
+
     // 1. 获取设备授权码
-    let device_code_response = BaiduPanClient::oauth_token_device_code(
-        "your_client_id",
+    let device_code = BaiduPanClient::oauth_token_device_code(
+        app_key,
         "basic,netdisk"
     ).await?;
 
-    println!("请访问: {}", device_code_response.verification_url);
-    println!("输入用户码: {}", device_code_response.user_code);
+    println!("请访问: {}", device_code.verification_url);
+    println!("输入用户码: {}", device_code.user_code);
 
-    // 2. 轮询获取 access_token
-    let token_response = BaiduPanClient::oauth_token_device_token(
-        &device_code_response.device_code,
-        "your_client_id",
-        "your_client_secret"
+    // 2. 等待用户授权后获取 access_token
+    let token = BaiduPanClient::oauth_token_device_token(
+        &device_code.device_code,
+        app_key,
+        secret_key
     ).await?;
 
     // 3. 创建客户端
-    let config = Config::new(token_response.access_token);
+    let config = Config::new(token.access_token);
     let client = BaiduPanClient::new(config);
 
     // 4. 获取用户信息
@@ -178,6 +227,36 @@ println!("文件 ID: {}", result.fs_id);
 println!("文件路径: {}", result.path);
 ```
 
+### 多媒体文件 API
+
+```rust
+// 递归获取所有文件列表
+let all_files = client.file_list_all(
+    "/apps/myapp",     // 目录路径
+    1,                 // 是否递归(0=否, 1=是)
+    Some(0),           // 起始位置
+    Some(100)          // 返回数量
+).await?;
+
+// 获取文件元数据和下载链接
+let metas = client.file_metas(
+    "[123456,789012]", // 文件 ID 列表
+    Some(1),           // 返回下载链接(0=否, 1=是)
+    Some("1"),         // 缩略图尺寸
+    Some(1),           // 返回额外信息(0=否, 1=是)
+    Some(1)            // 需要多媒体信息(0=否, 1=是)
+).await?;
+
+// 使用下载链接
+for file in metas.list {
+    if let Some(dlink) = file.dlink {
+        println!("文件: {}", file.server_filename.unwrap_or_default());
+        println!("下载链接: {}", dlink);
+        // 下载时需要在请求中添加 access_token
+    }
+}
+```
+
 ## 配置选项
 
 ```rust
@@ -196,7 +275,7 @@ let client = BaiduPanClient::new(config);
 SDK 提供了完整的错误类型:
 
 ```rust
-use bd_sdk_rust::Error;
+use baidupan_sdk_rust::Error;
 
 match client.get_user_info().await {
     Ok(user_info) => {
@@ -214,26 +293,82 @@ match client.get_user_info().await {
 }
 ```
 
+## 示例程序
+
+本项目在 `examples/` 目录下提供了完整的示例程序:
+
+### 📱 完整功能演示 ([complete_demo.rs](examples/complete_demo.rs))
+
+包含从授权到文件操作的完整流程:
+- OAuth 设备码授权
+- 获取用户信息和配额
+- 文件列表、搜索
+- 创建/重命名/删除文件夹
+
+```bash
+# 1. 编辑文件配置 AppKey 和 SecretKey
+# 2. 运行
+cargo run --example complete_demo
+```
+
+### 📤 文件上传 ([simple_upload.rs](examples/simple_upload.rs))
+
+演示文件上传功能:
+```bash
+cargo run --example simple_upload
+```
+
+### 🔄 刷新 Token ([refresh_token.rs](examples/refresh_token.rs))
+
+演示如何刷新 Access Token:
+```bash
+cargo run --example refresh_token
+```
+
+### 🎬 多媒体文件 API ([multimedia_demo.rs](examples/multimedia_demo.rs))
+
+演示如何获取文件元数据和下载链接:
+```bash
+export BAIDUPAN_ACCESS_TOKEN="your_access_token"
+cargo run --example multimedia_demo
+```
+
+包含:
+- 递归获取所有文件列表
+- 获取文件下载链接
+- 批量获取文件元数据
+
+详细说明请查看 [examples/README.md](examples/README.md)
+
 ## 项目结构
 
 ```
-bd-sdk-rust/
+baidupan-sdk-rust/
 ├── src/
-│   ├── lib.rs           # 库入口
-│   ├── client.rs        # 客户端核心
-│   ├── config.rs        # 配置管理
-│   ├── error.rs         # 错误类型
-│   ├── api/             # API 模块
-│   │   ├── auth.rs      # 认证 API
-│   │   ├── fileinfo.rs  # 文件信息 API
+│   ├── lib.rs              # 库入口
+│   ├── main.rs             # 主程序示例
+│   ├── client.rs           # 核心客户端
+│   ├── config.rs           # 配置管理
+│   ├── error.rs            # 错误类型
+│   ├── api/                # API 模块
+│   │   ├── mod.rs
+│   │   ├── auth.rs         # 认证 API
+│   │   ├── fileinfo.rs     # 文件信息 API
 │   │   ├── filemanager.rs  # 文件管理 API
 │   │   ├── fileupload.rs   # 文件上传 API
 │   │   └── userinfo.rs     # 用户信息 API
-│   └── models/          # 数据模型
-│       ├── auth.rs      # 认证相关模型
-│       ├── file.rs      # 文件相关模型
-│       └── user.rs      # 用户相关模型
+│   └── models/             # 数据模型
+│       ├── mod.rs
+│       ├── auth.rs         # 认证模型
+│       ├── file.rs         # 文件模型
+│       └── user.rs         # 用户模型
+├── examples/               # 示例程序
+│   ├── README.md
+│   ├── complete_demo.rs    # 完整功能演示
+│   ├── simple_upload.rs    # 文件上传示例
+│   └── refresh_token.rs    # Token 刷新示例
 ├── Cargo.toml
+├── LICENSE.txt
 └── README.md
 ```
 
@@ -249,18 +384,21 @@ bd-sdk-rust/
 
 ## 依赖
 
-- `reqwest` - HTTP 客户端
-- `serde` - 序列化/反序列化
-- `tokio` - 异步运行时
+本项目使用了以下优质 Rust 库:
+
+- `reqwest` - HTTP 客户端 (支持 async)
+- `serde` / `serde_json` - 序列化/反序列化
+- `tokio` - 异步运行时 (仅使用必需的 features)
 - `thiserror` - 错误处理
-- `md5` - MD5 计算
+- `url` - URL 解析
+- `md5` - MD5 计算(用于文件上传)
 
 ## 开发
 
 ```bash
 # 克隆项目
-git clone https://github.com/yourusername/bd-sdk-rust.git
-cd bd-sdk-rust
+git clone https://github.com/yzbtdiy/baidupan-sdk-rust.git
+cd baidupan-sdk-rust
 
 # 构建项目
 cargo build
@@ -269,18 +407,78 @@ cargo build
 cargo test
 
 # 运行示例
-cargo run
+cargo run --example complete_demo
+
+# 代码检查
+cargo clippy
+
+# 格式化代码
+cargo fmt
 ```
 
-## 许可证
+## 常见问题
 
-MIT License
+### 如何获取 AppKey 和 SecretKey?
 
-## 参考
+1. 访问 [百度开放平台](https://pan.baidu.com/union/console/applist)
+2. 登录百度账号
+3. 创建新应用
+4. 在应用详情中查看 **AppKey** 和 **SecretKey**
 
-- [百度网盘开放平台文档](https://pan.baidu.com/union/doc/)
-- [官方 Go SDK](https://github.com/tickstep/cloudpan189-go)
+### Access Token 有效期是多久?
+
+Access Token 通常有效期为 30 天。过期后可以使用 Refresh Token 刷新:
+
+```rust
+let new_token = BaiduPanClient::oauth_token_refresh(
+    refresh_token,
+    app_key,
+    secret_key
+).await?;
+```
+
+### 如何保存凭证?
+
+**不要将凭证硬编码到代码中!** 建议使用:
+
+1. **环境变量**
+```rust
+let app_key = std::env::var("BAIDU_APP_KEY")?;
+let secret_key = std::env::var("BAIDU_SECRET_KEY")?;
+```
+
+2. **配置文件** (添加到 .gitignore)
+```toml
+# config.toml
+[baidu]
+app_key = "your_app_key"
+secret_key = "your_secret_key"
+```
+
+3. **密钥管理服务** (生产环境推荐)
+
+## 路线图
+
+- [x] OAuth 认证
+- [x] 用户信息 API
+- [x] 文件信息 API
+- [x] 文件管理 API
+- [x] 文件上传 API
+- [ ] 文件下载 API
+- [ ] 分享管理 API
+- [ ] 离线下载 API
+- [ ] 更多示例和文档
 
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request!
+
+1. Fork 本项目
+2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 开启 Pull Request
+
+## 许可证
+
+本项目采用 MIT 许可证。详见 [LICENSE.txt](LICENSE.txt) 文件。

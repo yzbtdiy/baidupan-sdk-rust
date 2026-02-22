@@ -107,6 +107,45 @@ impl BaiduPanClient {
         Ok(response)
     }
 
+    /// 发送 POST 表单请求 (application/x-www-form-urlencoded)
+    pub(crate) async fn post_form(
+        &self,
+        url: &str,
+        params: HashMap<String, String>,
+        form_data: HashMap<String, String>,
+    ) -> Result<Response> {
+        let mut url = url::Url::parse(url)?;
+
+        // 添加 access_token
+        let mut query_params = params;
+        query_params.insert("access_token".to_string(), self.config.access_token.clone());
+
+        for (key, value) in query_params {
+            url.query_pairs_mut().append_pair(&key, &value);
+        }
+
+        if self.config.debug {
+            eprintln!("POST (form) {}", url);
+            eprintln!("Form data: {:?}", form_data);
+        }
+
+        // 手动构建 form-urlencoded 字符串
+        let form_body: String = form_data
+            .iter()
+            .map(|(k, v)| format!("{}={}", urlencoding::encode(k), urlencoding::encode(v)))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        let response = self.http_client
+            .post(url)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(form_body)
+            .send()
+            .await?;
+
+        Ok(response)
+    }
+
     /// 解析 API 响应
     pub(crate) async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T> {
         let status = response.status();
