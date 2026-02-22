@@ -346,7 +346,6 @@ cargo run --example multimedia_demo
 baidupan-sdk-rust/
 ├── src/
 │   ├── lib.rs              # 库入口
-│   ├── main.rs             # 主程序示例
 │   ├── client.rs           # 核心客户端
 │   ├── config.rs           # 配置管理
 │   ├── error.rs            # 错误类型
@@ -356,6 +355,7 @@ baidupan-sdk-rust/
 │   │   ├── fileinfo.rs     # 文件信息 API
 │   │   ├── filemanager.rs  # 文件管理 API
 │   │   ├── fileupload.rs   # 文件上传 API
+│   │   ├── multimedia.rs   # 多媒体文件 API
 │   │   └── userinfo.rs     # 用户信息 API
 │   └── models/             # 数据模型
 │       ├── mod.rs
@@ -363,10 +363,11 @@ baidupan-sdk-rust/
 │       ├── file.rs         # 文件模型
 │       └── user.rs         # 用户模型
 ├── examples/               # 示例程序
-│   ├── README.md
+│   ├── README.md           # 示例说明
 │   ├── complete_demo.rs    # 完整功能演示
 │   ├── simple_upload.rs    # 文件上传示例
-│   └── refresh_token.rs    # Token 刷新示例
+│   ├── refresh_token.rs    # Token 刷新示例
+│   └── multimedia_demo.rs  # 多媒体 API 示例
 ├── Cargo.toml
 ├── LICENSE.txt
 └── README.md
