@@ -72,7 +72,7 @@ impl BaiduPanClient {
     /// let result = client.file_metas("[123456,789012]", Some(1), None, None, None).await?;
     /// for item in result.list {
     ///     if let Some(dlink) = item.dlink {
-    ///         println!("Download: {}", dlink);
+    ///         println!(": {}", dlink);
     ///     }
     /// }
     /// # Ok(())

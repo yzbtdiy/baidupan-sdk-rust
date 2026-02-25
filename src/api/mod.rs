@@ -1,6 +1,9 @@
 /// 认证 API
 pub mod auth;
 
+/// 文件下载 API
+pub mod filedownload;
+
 /// 文件信息 API
 pub mod fileinfo;
 

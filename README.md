@@ -227,6 +227,52 @@ println!("文件 ID: {}", result.fs_id);
 println!("文件路径: {}", result.path);
 ```
 
+### 文件下载 API
+
+```rust
+use std::path::Path;
+
+// 第一步：获取文件的 dlink 下载链接
+let metas = client.file_metas(
+    "[123456,789012]",  // 文件 ID 列表
+    Some(1),            // dlink=1 表示返回下载链接
+    None,
+    None,
+    None,
+).await?;
+
+// 第二步：使用 dlink 下载文件到本地
+if let Some(file) = metas.list.first() {
+    if let Some(dlink) = &file.dlink {
+        // 下载完整文件
+        let bytes_written = client.download_file(dlink, "/tmp/myfile.txt").await?;
+        println!("下载完成，共 {} 字节", bytes_written);
+    }
+}
+
+// 分片下载 / 断点续传（通过 Range 请求头）
+let bytes_written = client.download_file_range(
+    "https://d.pcs.baidu.com/...",
+    "/tmp/myfile.part",
+    Some(0),            // 起始字节（包含）
+    Some(1024 * 1024 - 1), // 结束字节（包含），此处下载前 1MB
+).await?;
+
+// 下载为内存字节数组（不写入磁盘）
+let data: Vec<u8> = client.download_bytes(
+    "https://d.pcs.baidu.com/...",
+    None, // range_start
+    None, // range_end
+).await?;
+println!("获取到 {} 字节", data.len());
+```
+
+> **注意**:
+> - dlink 有效期为 **8 小时**，过期后需重新调用 `file_metas` 获取
+> - 下载请求会自动设置 `User-Agent: pan.baidu.com` 并拼接 `access_token`
+> - dlink 存在 302 跳转，SDK 会自动跟随
+> - 支持通过 `Range` 请求头实现断点续传
+
 ### 多媒体文件 API
 
 ```rust
@@ -465,7 +511,7 @@ secret_key = "your_secret_key"
 - [x] 文件信息 API
 - [x] 文件管理 API
 - [x] 文件上传 API
-- [ ] 文件下载 API
+- [x] 文件下载 API
 - [ ] 分享管理 API
 - [ ] 离线下载 API
 - [ ] 更多示例和文档
